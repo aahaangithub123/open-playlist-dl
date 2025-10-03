@@ -38,8 +38,8 @@ A modern, beautiful WebUI for downloading and syncing YouTube Music playlists us
 
 1. **Clone or download this project**
    ```cmd
-   git clone <repository-url>
-   cd youtube-music-downloader
+   git clone https://github.com/aahaangithub123/open-playlist-dl
+   cd open-playlist-dl
    ```
 
 2. **Create a virtual environment** (recommended)
@@ -80,8 +80,8 @@ A modern, beautiful WebUI for downloading and syncing YouTube Music playlists us
 
 2. **Create project directory**
    ```bash
-   mkdir youtube-music-downloader
-   cd youtube-music-downloader
+   mkdir open-playlist-dl
+   cd open-playlist-dl
    ```
 
 3. **Create and save the app.py file**
@@ -282,7 +282,7 @@ Change to your preferred format:
 ## Project Structure
 
 ```
-youtube-music-downloader/
+open-playlist-dl/
 ├── app.py                 # Main Flask application
 ├── requirements.txt       # Python dependencies
 ├── data/                  # Data directory
@@ -318,3 +318,4 @@ This project is for personal use. Respect YouTube's Terms of Service and copyrig
 - Uses yt-dlp for downloading
 - FFmpeg for audio conversion
 - SQLite for data management
+
