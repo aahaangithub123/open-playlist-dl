@@ -1,0 +1,41 @@
+{
+  "output_directory": {
+    "windows": "C:\\Music\\Downloads",
+    "termux": "/storage/emulated/0/Music/YTMusicDownloads",
+    "linux": "~/Music/Downloads"
+  },
+  "audio_settings": {
+    "format": "mp3",
+    "bitrate": "320",
+    "quality_options": ["128", "192", "256", "320"]
+  },
+  "sync_settings": {
+    "auto_sync": false,
+    "sync_interval_minutes": 60,
+    "retry_failed_downloads": true,
+    "max_retries": 3
+  },
+  "yt_dlp_options": {
+    "extract_audio": true,
+    "audio_format": "mp3",
+    "quiet": true,
+    "no_warnings": true,
+    "extract_flat": false,
+    "ignoreerrors": false
+  },
+  "server_settings": {
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": false
+  },
+  "database": {
+    "path": "data/playlists.db",
+    "backup_enabled": true,
+    "backup_interval_days": 7
+  },
+  "ui_settings": {
+    "refresh_interval_seconds": 2,
+    "max_log_entries": 100,
+    "theme": "dark"
+  }
+}
