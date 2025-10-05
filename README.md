@@ -79,7 +79,7 @@ A modern, beautiful WebUI for downloading and syncing YouTube Music playlists us
 4. **(Optional) Add cookies**
    ```bash
    # Copy your cookies.txt to data folder
-   cp /storage/shared/Download/cookies.txt data/
+   cp ~/storage/shared/Download/cookies.txt data/
    ```
 
 5. **Run the application**
@@ -287,6 +287,7 @@ This project is for personal use. Respect YouTube's Terms of Service and copyrig
 - Uses yt-dlp for downloading
 - FFmpeg for audio conversion
 - SQLite for data management
+
 
 
 
