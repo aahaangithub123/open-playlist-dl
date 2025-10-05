@@ -178,19 +178,31 @@ class YdlLogger:
 def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
     """Get yt-dlp options, now accepting IDs for logging hook."""
     opts = {
-        'format': 'bestaudio/best',
-        'writethumbnail': True,  # <-- NEW: Tells yt-dlp to download the thumbnail file
+        # CRUCIAL: 'bestaudio/best' only gives you audio. 
+        # Add 'bestaudio+best' to select the best audio stream AND the best video stream 
+        # (which contains the best thumbnail, 'th') before conversion.
+        'format': 'bestaudio+best/best', 
+        
+        # This tells yt-dlp to download the thumbnail file separately first
+        'writethumbnail': True, 
+        
         'postprocessors': [
             {
+                # 1. Extract and Convert the audio
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': bitrate,
             },
-            # CRUCIAL ADDITION: Order matters here!
-            # 1. Add general metadata (title, artist, etc.)
-            {'key': 'FFmpegMetadata', 'add_metadata': True}, 
-            # 2. Embed the thumbnail (album art) using the downloaded file
-            {'key': 'EmbedThumbnail'}, 
+            {
+                # 2. Embed the metadata (title, artist, etc.)
+                'key': 'FFmpegMetadata',
+                'add_metadata': True,
+            },
+            {
+                # 3. Embed the downloaded thumbnail into the MP3 file
+                'key': 'EmbedThumbnail',
+                'already_have_thumbnail': False,
+            }
         ],
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
         'quiet': True,
