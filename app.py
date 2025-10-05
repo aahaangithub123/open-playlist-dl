@@ -9,6 +9,8 @@ from datetime import datetime, date
 import json
 from pathlib import Path
 import subprocess
+import platform
+import shutil
 
 
 app = Flask(__name__, static_folder='build', static_url_path='')
@@ -177,6 +179,10 @@ class YdlLogger:
     def error(self, msg):
         log_message(f"YTDL Error: {msg}")
 
+def is_termux():
+    """Detect if running in Termux environment"""
+    return os.path.exists('/data/data/com.termux')
+
 def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
     opts = {
         'format': 'bestaudio/best',
@@ -200,11 +206,52 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
         'logger': YdlLogger(playlist_id, song_id),
     }
 
+    # Termux-specific fixes
+    if is_termux():
+        # Explicitly set FFmpeg location if needed
+        ffmpeg_path = shutil.which('ffmpeg')
+        if ffmpeg_path:
+            opts['ffmpeg_location'] = os.path.dirname(ffmpeg_path)
+        
+        # Try alternative postprocessor order for Termux
+        opts['postprocessors'] = [
+            {
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': bitrate,
+            },
+            {'key': 'EmbedThumbnail', 'already_have_thumbnail': False},
+            {'key': 'FFmpegMetadata', 'add_metadata': True},
+        ]
+        
+        # Ensure temp files are in a writable location
+        termux_tmp = '/data/data/com.termux/files/usr/tmp'
+        if os.path.exists(termux_tmp):
+            os.environ['TMPDIR'] = termux_tmp
+
     if COOKIES_PATH.exists():
         opts['cookiefile'] = str(COOKIES_PATH)
+    
     return opts
 
-
+def test_ffmpeg_thumbnail_support():
+    """Test if FFmpeg supports thumbnail embedding"""
+    try:
+        result = subprocess.run(
+            ['ffmpeg', '-version'], 
+            capture_output=True, 
+            text=True
+        )
+        log_message(f"FFmpeg version: {result.stdout.split()[2] if result.stdout else 'Unknown'}")
+        
+        # Check for required libraries
+        if 'libavformat' in result.stdout and 'libavcodec' in result.stdout:
+            log_message("FFmpeg has required libraries for thumbnail embedding")
+        else:
+            log_message("WARNING: FFmpeg may be missing required libraries")
+            
+    except Exception as e:
+        log_message(f"FFmpeg check failed: {e}")
     
 def fetch_playlist_info(url):
     """Fetch playlist information without downloading"""
@@ -691,6 +738,7 @@ def update_settings():
 
 if __name__ == '__main__':
     init_db()
+    test_ffmpeg_thumbnail_support()
     start_background_threads()
     print("Starting YouTube Music Downloader...")
     print(f"Database: {DB_PATH}")
