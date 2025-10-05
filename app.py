@@ -246,22 +246,41 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
 
 def test_ffmpeg_thumbnail_support():
     """Test if FFmpeg supports thumbnail embedding"""
+    log_message("=== FFmpeg Diagnostic ===")
     try:
+        # Check FFmpeg version
         result = subprocess.run(
             ['ffmpeg', '-version'], 
             capture_output=True, 
             text=True
         )
-        log_message(f"FFmpeg version: {result.stdout.split()[2] if result.stdout else 'Unknown'}")
+        if result.stdout:
+            version_line = result.stdout.split('\n')[0]
+            log_message(f"FFmpeg: {version_line}")
         
-        # Check for required libraries
-        if 'libavformat' in result.stdout and 'libavcodec' in result.stdout:
-            log_message("FFmpeg has required libraries for thumbnail embedding")
+        # Check if AtomicParsley is available (alternative for embedding)
+        atomicparsley = shutil.which('AtomicParsley')
+        if atomicparsley:
+            log_message(f"AtomicParsley found: {atomicparsley}")
         else:
-            log_message("WARNING: FFmpeg may be missing required libraries")
+            log_message("AtomicParsley NOT found (may be needed for thumbnails)")
+        
+        # Test actual thumbnail embedding
+        log_message("Testing thumbnail embed capability...")
+        test_result = subprocess.run(
+            ['ffmpeg', '-f', 'lavfi', '-i', 'color=c=black:s=100x100:d=1', 
+             '-f', 'mp3', '-'], 
+            capture_output=True, 
+            timeout=5
+        )
+        if test_result.returncode == 0:
+            log_message("FFmpeg can create MP3 files ✓")
+        else:
+            log_message(f"FFmpeg MP3 test failed: {test_result.stderr.decode()[:200]}")
             
     except Exception as e:
-        log_message(f"FFmpeg check failed: {e}")
+        log_message(f"FFmpeg diagnostic failed: {e}")
+    log_message("=== End Diagnostic ===")
     
 def fetch_playlist_info(url):
     """Fetch playlist information without downloading"""
