@@ -123,7 +123,7 @@ Click the "Settings" button to configure:
 
 Each playlist shows:
 - **Song Counter**: `23/50` means 23 downloaded out of 50 total
-- **Progress Bar**: Visual representation of completion percentage
+- **Progress Bar**: Visual representation of completion
 - **Current Song**: Name of the song currently being downloaded
 - **Status**: Real-time updates in the activity log
 
@@ -287,6 +287,7 @@ This project is for personal use. Respect YouTube's Terms of Service and copyrig
 - Uses yt-dlp for downloading
 - FFmpeg for audio conversion
 - SQLite for data management
+
 
 
 
