@@ -41,6 +41,7 @@ echo "Installing/updating other packages (python, ffmpeg, git)..."
 pkg update -y
 pkg upgrade -y
 pkg install -y python ffmpeg git
+pkg install atomicparsley
 echo "[OK] System packages ready."
 
 # --- 2. Python Setup ---
