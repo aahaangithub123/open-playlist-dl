@@ -29,7 +29,7 @@ A modern, beautiful WebUI for downloading and syncing YouTube Music playlists us
    ```
 3. Install required packages:
    ```bash
-   pkg install python ffmpeg
+   pkg install python ffmpeg Flask
    ```
 
 ## Installation
@@ -42,86 +42,53 @@ A modern, beautiful WebUI for downloading and syncing YouTube Music playlists us
    cd open-playlist-dl
    ```
 
-2. **Create a virtual environment** (recommended)
-   ```cmd
-   python -m venv venv
-   venv\Scripts\activate
-   ```
+2. **Setup**
+   Run setup_windows.bat
 
-3. **Install Python dependencies**
-   ```cmd
-   pip install -r requirements.txt
-   ```
-
-4. **Create data directory**
-   ```cmd
-   mkdir data
-   ```
-
-5. **(Optional) Add cookies for age-restricted content**
+3. **(Optional) Add cookies for age-restricted content**
    - Export cookies from your browser using an extension like "Get cookies.txt"
    - Save the cookies.txt file to the `data` folder
 
-6. **Run the application**
-   ```cmd
-   python app.py
-   ```
+7. **Run the application**
+   Run run_windows.bat
 
-7. **Open your browser**
-   - Navigate to `http://localhost:5000`
+8. **Open your browser**
+   - Navigate to `http://localhost:5173`
 
 ### Termux (Android)
 
-1. **Navigate to storage**
+1. **Clone git repo**
    ```bash
    termux-setup-storage
-   cd ~/storage/shared
+   git clone https://github.com/aahaangithub123/open-playlist-dl
    ```
 
-2. **Create project directory**
+2. **Open project directory**
    ```bash
-   mkdir open-playlist-dl
    cd open-playlist-dl
    ```
 
-3. **Create and save the app.py file**
-   - Use a text editor or copy the file
+3. **Setup**
+
    ```bash
-   nano app.py
-   # Paste the content and save (Ctrl+X, Y, Enter)
+   bash setup_termux.sh
    ```
 
-4. **Create requirements.txt**
-   ```bash
-   nano requirements.txt
-   # Paste the requirements and save
-   ```
-
-5. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-6. **Create data directory**
-   ```bash
-   mkdir data
-   ```
-
-7. **(Optional) Add cookies**
+4. **(Optional) Add cookies**
    ```bash
    # Copy your cookies.txt to data folder
-   cp /path/to/cookies.txt data/
+   cp /storage/shared/Download/cookies.txt data/
    ```
 
-8. **Run the application**
+5. **Run the application**
    ```bash
-   python app.py
+   bash run_termux.sh
    ```
 
-9. **Access from your device**
+6. **Access from your device**
    - Open a browser on your Android device
-   - Go to `http://localhost:5000`
-   - Or from another device on the same network: `http://<your-phone-ip>:5000`
+   - Go to `http://localhost:5173`
+   - Or from another device on the same network: `http://<your-phone-ip>:5173`
 
 ## Usage
 
@@ -318,4 +285,5 @@ This project is for personal use. Respect YouTube's Terms of Service and copyrig
 - Uses yt-dlp for downloading
 - FFmpeg for audio conversion
 - SQLite for data management
+
 
