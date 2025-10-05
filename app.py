@@ -183,18 +183,22 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
         'embedthumbnail': True,
 
         'postprocessors': [
-            {  # Convert to MP3
+            {  # 1. Convert to MP3
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': bitrate,
             },
-            {'key': 'FFmpegMetadata'},
-            {'key': 'EmbedThumbnail'},
-        ],
-
-        # Crop thumbnail to center square 720x720 before embedding
-        'postprocessor_args': [
-            '-vf', 'crop=min(iw,ih):min(iw,ih),scale=720:720'
+            {  # 2. Convert the thumbnail to square 720x720 before embedding
+                'key': 'FFmpegThumbnailsConvertor',
+                'format': 'jpg',
+                'when': 'before_dl',
+                'exec_cmd': (
+                    'ffmpeg -y -i "%(filepath)s" -vf '
+                    '"crop=min(iw,ih):min(iw,ih),scale=720:720" "%(filepath)s"'
+                ),
+            },
+            { 'key': 'FFmpegMetadata' },
+            { 'key': 'EmbedThumbnail' },
         ],
 
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
@@ -208,6 +212,7 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
     if COOKIES_PATH.exists():
         opts['cookiefile'] = str(COOKIES_PATH)
     return opts
+
 
 
     
