@@ -114,7 +114,7 @@ A modern, beautiful WebUI for downloading and syncing YouTube Music playlists us
 Click the "Settings" button to configure:
 - **Output Directory**: Where to save downloaded music
   - Windows: `C:\Music\Downloads`
-  - Termux: `/storage/emulated/0/Music/Downloads`
+  - Termux: `/storage/emulated/0/Music`
 - **Bitrate**: Audio quality (128, 192, 256, 320 kbps)
 - **Sync Interval**: How often to auto-sync (in minutes)
 - **Auto-Sync**: Enable/disable automatic synchronization
@@ -287,6 +287,7 @@ This project is for personal use. Respect YouTube's Terms of Service and copyrig
 - Uses yt-dlp for downloading
 - FFmpeg for audio conversion
 - SQLite for data management
+
 
 
 
