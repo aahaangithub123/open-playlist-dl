@@ -179,11 +179,15 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
     """Get yt-dlp options, now accepting IDs for logging hook."""
     opts = {
         'format': 'bestaudio/best',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': bitrate,
-        }],
+        'postprocessors': [
+            {
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': bitrate,
+            },
+            {'key': 'EmbedThumbnail'}, 
+            {'key': 'FFmpegMetadata', 'add_metadata': True}
+        ],
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
         'quiet': True,
         'no_warnings': True,
@@ -195,7 +199,6 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
         opts['cookiefile'] = str(COOKIES_PATH)
     
     return opts
-
 def fetch_playlist_info(url):
     """Fetch playlist information without downloading"""
     opts = {
@@ -575,9 +578,7 @@ def download_playlist(playlist_id, only_info_sync=False):
 def info_update_loop():
     """Background thread to rapidly update DB info for a responsive UI."""
     while True:
-        settings = get_settings()
-        log_message("Auto-Info-Sync: Checking all playlists for remote/local changes.")
-        
+        settings = get_settings()        
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute('SELECT id FROM playlists')
