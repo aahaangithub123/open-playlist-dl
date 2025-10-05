@@ -178,46 +178,40 @@ class YdlLogger:
 def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
     """Get yt-dlp options, now accepting IDs for logging hook."""
     opts = {
-        # 1. FORCE THE BEST AUDIO AND A COMPATIBLE THUMBNAIL (JPG)
-        # Using [format_id=best/best] ensures we get the best audio/video.
-        # The key is to add the custom selector 'th_format:jpg' to guarantee a compatible image.
-        'format': 'bestaudio/best',
-        'postprocessor_args': {
-            # Add this to force the thumbnail to be a universally supported format (JPG)
-            'SponsorBlock': ['--fix-thumbnail', 'best[ext=jpg]'],
-            'EmbedMetadata': ['--embed-metadata'] 
-        },
+        # Select best audio + best video (for high-quality thumbnail source)
+        # Using a format selector that includes the best thumbnail
+        'format': 'bestaudio+best/best', 
         
-        # 'writethumbnail' is needed to download the file before embedding
+        # 1. Download the thumbnail file
         'writethumbnail': True, 
-        # 'keepvideo' is set to False to clean up the temporary files
-        'keepvideo': False, 
         
-        # 2. POST-PROCESSING (Simplified and Combined)
+        # 2. Use the metadata to ensure tags are written
+        'addmetadata': True,
+
+        # 3. CRUCIAL: Embed the thumbnail using the command-line equivalent flag
+        'embedthumbnail': True, 
+        
+        # 4. Use the post-processor only for audio extraction
         'postprocessors': [
             {
                 # A. Convert to MP3
+                # This step now handles audio conversion AND (with the flags above) embedding/tagging
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': bitrate,
-            },
-            {
-                # B. Embed ALL Metadata (Title, Artist, Album Art, etc.)
-                # This post-processor handles both tagging and embedding the art.
-                'key': 'EmbedMetadata',
-                'add_metadata': True,
-                'add_infojson': False,
             }
         ],
         
+        # Output template to save files with the final name
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
+        
         'quiet': True,
         'no_warnings': True,
+        'keepvideo': False, # Clean up temporary video files
         'extract_flat': False,
         'logger': YdlLogger(playlist_id, song_id) 
     }
     
-    # ... (Your cookie logic remains the same)
     if COOKIES_PATH.exists():
         opts['cookiefile'] = str(COOKIES_PATH)
     
