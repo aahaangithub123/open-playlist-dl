@@ -8,6 +8,8 @@ import time
 from datetime import datetime, date
 import json
 from pathlib import Path
+import subprocess
+
 
 app = Flask(__name__, static_folder='build', static_url_path='')
 CORS(app)
@@ -181,25 +183,15 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
         'writethumbnail': True,
         'addmetadata': True,
         'embedthumbnail': True,
-
-    'postprocessors': [
-        {  # 1. Extract & convert to MP3
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': bitrate,
-        },
-        {  # 2. Resize thumbnail before embedding
-            'key': 'FFmpegThumbnailsConvertor',
-            'format': 'jpg',
-            'when': 'before_dl',
-            'postprocessor_args': [
-                '-vf', 'crop=min(iw,ih):min(iw,ih),scale=720:720'
-            ],
-        },
-        {'key': 'FFmpegMetadata'},
-        {'key': 'EmbedThumbnail'},
-    ],
-
+        'postprocessors': [
+            {
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': bitrate,
+            },
+            {'key': 'FFmpegMetadata'},
+            {'key': 'EmbedThumbnail'},
+        ],
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
         'quiet': True,
         'no_warnings': True,
@@ -211,7 +203,6 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
     if COOKIES_PATH.exists():
         opts['cookiefile'] = str(COOKIES_PATH)
     return opts
-
 
 
     
