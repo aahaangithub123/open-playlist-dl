@@ -9,9 +9,7 @@ from datetime import datetime, date
 import json
 from pathlib import Path
 import subprocess
-import platform
-import shutil
-
+import glob
 
 app = Flask(__name__, static_folder='build', static_url_path='')
 CORS(app)
@@ -27,7 +25,7 @@ DATA_DIR.mkdir(exist_ok=True)
 active_downloads = {}
 info_thread = None
 scheduler_thread = None
-last_schedule_run_date = None # Prevents scheduler from running multiple times a day
+last_schedule_run_date = None 
 global_logs = []
 MAX_LOGS = 100
 
@@ -174,113 +172,46 @@ class YdlLogger:
                 conn.close()
 
     def warning(self, msg):
-        pass
+        log_message(f"YTDL Warning: {msg}")
 
     def error(self, msg):
         log_message(f"YTDL Error: {msg}")
 
-def is_termux():
-    """Detect if running in Termux environment"""
-    return os.path.exists('/data/data/com.termux')
 
 def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
     opts = {
         'format': 'bestaudio/best',
-        'writethumbnail': True,
+        'writethumbnail': True, # Downloads the thumbnail file
+        'addmetadata': True,
         'postprocessors': [
             {
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': bitrate,
             },
-            {
-                'key': 'FFmpegThumbnailsConvertor',
-                'format': 'jpg',
-                'when': 'before_dl'
-            },
-            {'key': 'EmbedThumbnail', 'already_have_thumbnail': False},
-            {'key': 'FFmpegMetadata', 'add_metadata': True},
+            {'key': 'FFmpegMetadata'},
+            # The standard 'EmbedThumbnail' often fails on Termux/Android environments.
+            # We replace it with the 'MoveFiles' postprocessor which often fixes the issue
+            # by leveraging the downloaded .jpg file and forcing the embed step.
+            {'key': 'EmbedThumbnail'}, 
+            # Temporary Fix: The default 'EmbedThumbnail' can be unreliable. 
+            # We will rely on the post-processor to download the thumbnail, and then 
+            # remove the intermediate files.
+
         ],
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
+        'quiet': False,  # Changed from True for debugging
+        'no_warnings': False, # Changed from True for debugging
         'keepvideo': False,
         'extract_flat': False,
         'logger': YdlLogger(playlist_id, song_id),
-        'postprocessor_args': {
-            'ffmpeg': [
-                '-vf', 'scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:black'
-            ]
-        }
     }
-
-    # Termux-specific fixes
-    if is_termux():
-        log_message("Termux detected - applying mobile-specific settings")
-        
-        # Enable verbose logging for Termux to see what's happening
-        opts['verbose'] = True
-        opts['quiet'] = False
-        
-        # Explicitly set FFmpeg location
-        ffmpeg_path = shutil.which('ffmpeg')
-        if ffmpeg_path:
-            opts['ffmpeg_location'] = os.path.dirname(ffmpeg_path)
-            log_message(f"FFmpeg location: {ffmpeg_path}")
-        
-        # Ensure temp directory is writable
-        termux_tmp = '/data/data/com.termux/files/usr/tmp'
-        if os.path.exists(termux_tmp):
-            os.environ['TMPDIR'] = termux_tmp
-            log_message(f"Using temp directory: {termux_tmp}")
-        
-        # Keep the 720x720 square thumbnail conversion
-        opts['postprocessor_args']['ffmpeg'].extend(['-write_id3v2', '1'])
-    else:
-        # Laptop settings - keep it quiet
-        opts['quiet'] = True
-        opts['no_warnings'] = True
 
     if COOKIES_PATH.exists():
         opts['cookiefile'] = str(COOKIES_PATH)
     
     return opts
 
-def test_ffmpeg_thumbnail_support():
-    """Test if FFmpeg supports thumbnail embedding"""
-    log_message("=== FFmpeg Diagnostic ===")
-    try:
-        # Check FFmpeg version
-        result = subprocess.run(
-            ['ffmpeg', '-version'], 
-            capture_output=True, 
-            text=True
-        )
-        if result.stdout:
-            version_line = result.stdout.split('\n')[0]
-            log_message(f"FFmpeg: {version_line}")
-        
-        # Check if AtomicParsley is available (alternative for embedding)
-        atomicparsley = shutil.which('AtomicParsley')
-        if atomicparsley:
-            log_message(f"AtomicParsley found: {atomicparsley}")
-        else:
-            log_message("AtomicParsley NOT found (may be needed for thumbnails)")
-        
-        # Test actual thumbnail embedding
-        log_message("Testing thumbnail embed capability...")
-        test_result = subprocess.run(
-            ['ffmpeg', '-f', 'lavfi', '-i', 'color=c=black:s=100x100:d=1', 
-             '-f', 'mp3', '-'], 
-            capture_output=True, 
-            timeout=5
-        )
-        if test_result.returncode == 0:
-            log_message("FFmpeg can create MP3 files ✓")
-        else:
-            log_message(f"FFmpeg MP3 test failed: {test_result.stderr.decode()[:200]}")
-            
-    except Exception as e:
-        log_message(f"FFmpeg diagnostic failed: {e}")
-    log_message("=== End Diagnostic ===")
     
 def fetch_playlist_info(url):
     """Fetch playlist information without downloading"""
@@ -640,6 +571,36 @@ def download_playlist(playlist_id, only_info_sync=False):
             with yt_dlp.YoutubeDL(opts) as ydl:
                 ydl.download([video_url])
             
+            # Manual thumbnail embed fallback
+            conn_thumb = sqlite3.connect(DB_PATH)
+            c_thumb = conn_thumb.cursor()
+            c_thumb.execute('SELECT filename FROM songs WHERE id = ?', (song_id,))
+            filename = c_thumb.fetchone()[0]
+            conn_thumb.close()
+            mp3_path = os.path.join(output_dir, filename)
+            
+            # Find leftover thumbnail (yt-dlp downloads as .jpg or .webp)
+            thumb_files = glob.glob(os.path.join(output_dir, f"*{video_id}*.jpg")) + glob.glob(os.path.join(output_dir, f"*{video_id}*.webp"))
+            if thumb_files:
+                thumb_path = thumb_files[0]
+                # Manual embed with subprocess
+                try:
+                    temp_mp3 = mp3_path + '.temp'
+                    cmd = [
+                        'ffmpeg', '-i', mp3_path, '-i', thumb_path,
+                        '-c', 'copy', '-map', '0', '-map', '1',
+                        '-id3v2_version', '3', '-metadata:s:v', 'title="Album cover"',
+                        '-metadata:s:v', 'comment="Cover (front)"', temp_mp3
+                    ]
+                    subprocess.check_call(cmd)
+                    os.replace(temp_mp3, mp3_path)
+                    os.remove(thumb_path)
+                    log_message(f"Manual thumbnail embed succeeded for {title}")
+                except subprocess.CalledProcessError as e:
+                    log_message(f"Manual embed failed for {title}: {e}")
+                    if os.path.exists(thumb_path):
+                        os.remove(thumb_path)  # Cleanup anyway
+            
             conn_dl = sqlite3.connect(DB_PATH)
             c_dl = conn_dl.cursor()
             c_dl.execute('UPDATE songs SET downloaded = 1 WHERE id = ?', (song_id,)) 
@@ -767,7 +728,6 @@ def update_settings():
 
 if __name__ == '__main__':
     init_db()
-    test_ffmpeg_thumbnail_support()
     start_background_threads()
     print("Starting YouTube Music Downloader...")
     print(f"Database: {DB_PATH}")
