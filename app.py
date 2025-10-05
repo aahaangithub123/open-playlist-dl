@@ -178,26 +178,38 @@ class YdlLogger:
 def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
     """Get yt-dlp options, now accepting IDs for logging hook."""
     opts = {
-        # ... other options like 'format' and 'writethumbnail' remain the same
+        # 1. FORCE THE BEST AUDIO AND A COMPATIBLE THUMBNAIL (JPG)
+        # Using [format_id=best/best] ensures we get the best audio/video.
+        # The key is to add the custom selector 'th_format:jpg' to guarantee a compatible image.
+        'format': 'bestaudio/best',
+        'postprocessor_args': {
+            # Add this to force the thumbnail to be a universally supported format (JPG)
+            'SponsorBlock': ['--fix-thumbnail', 'best[ext=jpg]'],
+            'EmbedMetadata': ['--embed-metadata'] 
+        },
         
+        # 'writethumbnail' is needed to download the file before embedding
+        'writethumbnail': True, 
+        # 'keepvideo' is set to False to clean up the temporary files
+        'keepvideo': False, 
+        
+        # 2. POST-PROCESSING (Simplified and Combined)
         'postprocessors': [
             {
-                # 1. Convert the audio to MP3
+                # A. Convert to MP3
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': bitrate,
             },
             {
-                # 2. Add the metadata (title, artist, etc.) FIRST
-                'key': 'FFmpegMetadata',
+                # B. Embed ALL Metadata (Title, Artist, Album Art, etc.)
+                # This post-processor handles both tagging and embedding the art.
+                'key': 'EmbedMetadata',
                 'add_metadata': True,
-            },
-            {
-                # 3. Embed the downloaded thumbnail into the MP3 file LAST
-                'key': 'EmbedThumbnail',
-                'already_have_thumbnail': False,
+                'add_infojson': False,
             }
         ],
+        
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
         'quiet': True,
         'no_warnings': True,
@@ -205,10 +217,12 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
         'logger': YdlLogger(playlist_id, song_id) 
     }
     
+    # ... (Your cookie logic remains the same)
     if COOKIES_PATH.exists():
         opts['cookiefile'] = str(COOKIES_PATH)
     
     return opts
+    
 def fetch_playlist_info(url):
     """Fetch playlist information without downloading"""
     opts = {
