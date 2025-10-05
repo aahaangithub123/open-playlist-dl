@@ -176,46 +176,32 @@ class YdlLogger:
         log_message(f"YTDL Error: {msg}")
 
 def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
-    """Get yt-dlp options, now accepting IDs for logging hook."""
     opts = {
-        # Select best audio + best video (for high-quality thumbnail source)
-        # Using a format selector that includes the best thumbnail
-        'format': 'bestaudio+best/best', 
-        
-        # 1. Download the thumbnail file
-        'writethumbnail': True, 
-        
-        # 2. Use the metadata to ensure tags are written
+        'format': 'bestaudio/best',
+        'writethumbnail': True,
         'addmetadata': True,
-
-        # 3. CRUCIAL: Embed the thumbnail using the command-line equivalent flag
-        'embedthumbnail': True, 
-        
-        # 4. Use the post-processor only for audio extraction
+        'embedthumbnail': True,
         'postprocessors': [
             {
-                # A. Convert to MP3
-                # This step now handles audio conversion AND (with the flags above) embedding/tagging
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': bitrate,
-            }
+            },
+            {'key': 'FFmpegMetadata'},
+            {'key': 'EmbedThumbnail'},
         ],
-        
-        # Output template to save files with the final name
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
-        
         'quiet': True,
         'no_warnings': True,
-        'keepvideo': False, # Clean up temporary video files
+        'keepvideo': False,
         'extract_flat': False,
-        'logger': YdlLogger(playlist_id, song_id) 
+        'logger': YdlLogger(playlist_id, song_id),
     }
-    
+
     if COOKIES_PATH.exists():
         opts['cookiefile'] = str(COOKIES_PATH)
-    
     return opts
+
     
 def fetch_playlist_info(url):
     """Fetch playlist information without downloading"""
