@@ -187,47 +187,57 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
     opts = {
         'format': 'bestaudio/best',
         'writethumbnail': True,
-        'addmetadata': True,
-        'embedthumbnail': True,
         'postprocessors': [
             {
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': bitrate,
             },
-            {'key': 'FFmpegMetadata'},
-            {'key': 'EmbedThumbnail'},
+            {
+                'key': 'FFmpegThumbnailsConvertor',
+                'format': 'jpg',
+                'when': 'before_dl'
+            },
+            {'key': 'EmbedThumbnail', 'already_have_thumbnail': False},
+            {'key': 'FFmpegMetadata', 'add_metadata': True},
         ],
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
-        'quiet': True,
-        'no_warnings': True,
         'keepvideo': False,
         'extract_flat': False,
         'logger': YdlLogger(playlist_id, song_id),
+        'postprocessor_args': {
+            'ffmpeg': [
+                '-vf', 'scale=720:720:force_original_aspect_ratio=decrease,pad=720:720:(ow-iw)/2:(oh-ih)/2:black'
+            ]
+        }
     }
 
     # Termux-specific fixes
     if is_termux():
-        # Explicitly set FFmpeg location if needed
+        log_message("Termux detected - applying mobile-specific settings")
+        
+        # Enable verbose logging for Termux to see what's happening
+        opts['verbose'] = True
+        opts['quiet'] = False
+        
+        # Explicitly set FFmpeg location
         ffmpeg_path = shutil.which('ffmpeg')
         if ffmpeg_path:
             opts['ffmpeg_location'] = os.path.dirname(ffmpeg_path)
+            log_message(f"FFmpeg location: {ffmpeg_path}")
         
-        # Try alternative postprocessor order for Termux
-        opts['postprocessors'] = [
-            {
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': bitrate,
-            },
-            {'key': 'EmbedThumbnail', 'already_have_thumbnail': False},
-            {'key': 'FFmpegMetadata', 'add_metadata': True},
-        ]
-        
-        # Ensure temp files are in a writable location
+        # Ensure temp directory is writable
         termux_tmp = '/data/data/com.termux/files/usr/tmp'
         if os.path.exists(termux_tmp):
             os.environ['TMPDIR'] = termux_tmp
+            log_message(f"Using temp directory: {termux_tmp}")
+        
+        # Keep the 720x720 square thumbnail conversion
+        opts['postprocessor_args']['ffmpeg'].extend(['-write_id3v2', '1'])
+    else:
+        # Laptop settings - keep it quiet
+        opts['quiet'] = True
+        opts['no_warnings'] = True
 
     if COOKIES_PATH.exists():
         opts['cookiefile'] = str(COOKIES_PATH)
