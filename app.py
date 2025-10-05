@@ -182,24 +182,23 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
         'addmetadata': True,
         'embedthumbnail': True,
 
-        'postprocessors': [
-            {  # 1. Convert to MP3
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': bitrate,
-            },
-            {  # 2. Convert the thumbnail to square 720x720 before embedding
-                'key': 'FFmpegThumbnailsConvertor',
-                'format': 'jpg',
-                'when': 'before_dl',
-                'exec_cmd': (
-                    'ffmpeg -y -i "%(filepath)s" -vf '
-                    '"crop=min(iw,ih):min(iw,ih),scale=720:720" "%(filepath)s"'
-                ),
-            },
-            { 'key': 'FFmpegMetadata' },
-            { 'key': 'EmbedThumbnail' },
-        ],
+    'postprocessors': [
+        {  # 1. Extract & convert to MP3
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': bitrate,
+        },
+        {  # 2. Resize thumbnail before embedding
+            'key': 'FFmpegThumbnailsConvertor',
+            'format': 'jpg',
+            'when': 'before_dl',
+            'postprocessor_args': [
+                '-vf', 'crop=min(iw,ih):min(iw,ih),scale=720:720'
+            ],
+    },
+    {'key': 'FFmpegMetadata'},
+    {'key': 'EmbedThumbnail'},
+],
 
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
         'quiet': True,
