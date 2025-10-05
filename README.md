@@ -1,6 +1,8 @@
 # YouTube Music Playlist Downloader
 
 A modern, beautiful WebUI for downloading and syncing YouTube Music playlists using yt-dlp.
+<img width="2532" height="1316" alt="image" src="https://github.com/user-attachments/assets/d758b96d-97e0-47c7-a8c6-4803eac984a9" />
+
 
 ## Features
 
@@ -285,5 +287,6 @@ This project is for personal use. Respect YouTube's Terms of Service and copyrig
 - Uses yt-dlp for downloading
 - FFmpeg for audio conversion
 - SQLite for data management
+
 
 
