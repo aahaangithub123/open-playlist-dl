@@ -6,9 +6,15 @@ echo "========================================"
 echo "Starting YouTube Music Mirror Sync"
 echo "========================================"
 
+# --- CRITICAL FIX: Set Environment Variables for Background Process ---
+# The nohup command often strips environment variables like TMPDIR, causing FFmpeg failures.
+# Explicitly export the standard Termux temp path to fix embedding errors.
+export TMPDIR="/data/data/com.termux/files/usr/tmp"
+
 # --- 1. Start Python Flask in the background (Non-blocking) ---
 # We use nohup to ensure Flask keeps running even if the shell closes temporarily,
 # and redirect output to a log file.
+# The exported TMPDIR is inherited by this nohup process.
 nohup python app.py > data/flask_run_log.txt 2>&1 &
 
 FLASK_PID=$!
