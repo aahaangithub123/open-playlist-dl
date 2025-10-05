@@ -195,10 +195,10 @@ def get_ydl_opts(output_dir, bitrate, playlist_id, song_id):
             'postprocessor_args': [
                 '-vf', 'crop=min(iw,ih):min(iw,ih),scale=720:720'
             ],
-    },
-    {'key': 'FFmpegMetadata'},
-    {'key': 'EmbedThumbnail'},
-],
+        },
+        {'key': 'FFmpegMetadata'},
+        {'key': 'EmbedThumbnail'},
+    ],
 
         'outtmpl': os.path.join(output_dir, '%(title)s - %(artist)s.%(ext)s'),
         'quiet': True,
